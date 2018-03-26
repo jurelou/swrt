@@ -10,6 +10,7 @@ class DNSSniffer(threading.Thread):
     self.rIp = rIp 
     self.interface = interface 
     self.kill_received = False 
+    self.enableIpForwarding()
   
   def run(self): 
     while not self.kill_received: 
@@ -32,3 +33,10 @@ class DNSSniffer(threading.Thread):
 
   def sniff(self):
     sniff(iface = self.interface, filter = 'port 53', prn = self.cb, stop_filter=lambda p: self.e.is_set()) 
+
+  def enableIpForwarding(self):
+    ipf = open('/proc/sys/net/ipv4/ip_forward', 'r+')
+    ipf_read = ipf.read()
+    if ipf_read != '1\n':
+        ipf.write('1\n')
+    ipf.close()
