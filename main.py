@@ -6,7 +6,8 @@ import threading, time
 import sys
 import ARPPoisoner
 import DNSSniff
- 
+import multiprocessing
+
 class SWRT(object):
   args = 0
   def parseArgs(self):
@@ -27,31 +28,26 @@ class SWRT(object):
       print(" -- gateway:" +  SWRT.args.gateway)
  
  
- 
-def has_live_threads(threads):
-  return True in [t.isAlive() for t in threads]
-
 def main():
   SWRT().parseArgs()
   SWRT().printArgs()
- 
-  threads = []
-  thread = DNSSniff.DNSSniffer(SWRT.args.target, SWRT.args.interface)
-  thread.start()
-  threads.append(thread)
- 
-  while has_live_threads(threads):
-    try:
-      [t.join(1) for t in threads
-      if t is not None and t.isAlive()]
-    except KeyboardInterrupt:
-      for t in threads:
-        t.stop()
-        t.kill_received = True
-  print " -- exited"      
- 
+  sniffer = DNSSniff.DNSSniffer(SWRT.args.interface)
+  poisoner = ARPPoisoner.ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
+  poisoner.daemon = True
+  sniffer.daemon = True
+  sniffer.start()
+  poisoner.start()
+  try:
+    sniffer.join()
+    poisoner.join()
+  except KeyboardInterrupt:
+    poisoner.stop()
+    sniffer.stop()
+    sniffer.terminate()
+    poisoner.terminate()
+
 if __name__ == '__main__':
   if os.getuid()!=0:
     print("Need root privileges to run properly; Re-run as sudo...")
-    sys.exit()
+    sys.exit(1)
   main()
