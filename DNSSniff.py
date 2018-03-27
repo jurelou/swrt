@@ -7,6 +7,7 @@ from multiprocessing import Process
 class DNSSniffer(Process): 
   def __init__(self, i):
     super(DNSSniffer, self).__init__()
+    self.counter = 1
     self.interface = i
     self.enableIpForwarding()
   
@@ -20,7 +21,8 @@ class DNSSniffer(Process):
    
   def cb(self, pkt):
     if pkt.haslayer(DNSQR):
-      print pkt[IP].src , "->" , pkt[IP].dst , "(" + pkt.getlayer(DNS).qd.qname, ")"
+      self.counter += 1
+      return '#{}: {} ==> {} @({})'.format(self.counter, pkt[IP].src, pkt[IP].dst, pkt.getlayer(DNS).qd.qname)
       '''
       send(IP(dst=pkt[IP].src, src=pkt[IP].dst)/\
           UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport)/\
