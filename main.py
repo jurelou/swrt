@@ -2,6 +2,7 @@
  
 import argparse
 import os
+import threading, time
 import sys
 import ARPPoisoner
 import DNSSniff
@@ -29,7 +30,7 @@ class SWRT(object):
  
 def has_live_threads(threads):
   return True in [t.isAlive() for t in threads]
- 
+
 def main():
   SWRT().parseArgs()
   SWRT().printArgs()
