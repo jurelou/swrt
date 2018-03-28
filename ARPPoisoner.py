@@ -2,7 +2,7 @@
 
 from scapy.all import *
 from multiprocessing import Process
-import sys
+import sys, time
 
 class ARPPoisoner(Process):
     def __init__(self, victimIp, usurpedIp, interface):
@@ -37,7 +37,7 @@ class ARPPoisoner(Process):
     def run(self):
         while not self.kill:
             self.usurp()
-            self.__stopped.wait(1.0)
+            time.sleep(5)
 
     def stop(self):
         self.kill = True
