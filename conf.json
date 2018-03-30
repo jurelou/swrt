@@ -1,0 +1,20 @@
+{
+	"DNSEntries": [
+		{
+			"domains": [
+				"google.fr.",
+				"facebook.com.",
+				"hooli.com.",
+				"epitech.eu."
+			],
+			"ip": "mine"
+		}, {
+			"domains": [
+				"argos.sh.",
+				"marmus.me.",
+				"ritonade.fr."
+			],
+			"ip": "133.7.133.7"
+		}
+	]
+}

