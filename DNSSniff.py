@@ -4,6 +4,7 @@ import sys, time
 import DNSConf
 from scapy.all import * 
 from multiprocessing import Process
+from subprocess import call
  
 class DNSSniffer(Process): 
   def __init__(self, i, conf):
@@ -12,10 +13,13 @@ class DNSSniffer(Process):
     self.interface = i
     self.enableIpForwarding()
     self.conf = conf
+
+  def __del__(self):
+    self.disableIpForwarding()
   
   def run(self):
     while(True):
-      sniff(iface = self.interface, filter = 'port 53', prn = self.cb) 
+      sniff(iface = self.interface, filter = 'udp port 53', prn = self.cb) 
   
   def stop(self): 
     #self.e.set() 
@@ -33,8 +37,7 @@ class DNSSniffer(Process):
       return ('#{}: {} ==> {} @({})'.format(self.counter, pkt[IP].src, pkt[IP].dst, pkt.getlayer(DNS).qd.qname))
       
   def enableIpForwarding(self):
-    ipf = open('/proc/sys/net/ipv4/ip_forward', 'r+')
-    ipf_read = ipf.read()
-    if ipf_read != '1\n':
-        ipf.write('1\n')
-    ipf.close()
+    call(["sysctl", "-w", "net.ipv4.ip_forward=0"])
+
+  def disableIpForwarding(self):
+    call(["sysctl", "-w", "net.ipv4.ip_forward=0"])
