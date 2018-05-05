@@ -2,19 +2,10 @@
 	"DNSEntries": [
 		{
 			"domains": [
-				"google.fr.",
-				"facebook.com.",
-				"hooli.com.",
-				"epitech.eu."
+				"ritonade.fr.",
+				"poc.argos.sh."
 			],
-			"ip": "mine"
-		}, {
-			"domains": [
-				"argos.sh.",
-				"marmus.me.",
-				"ritonade.fr."
-			],
-			"ip": "133.7.133.7"
+			"ip": "192.168.1.101"
 		}
 	]
 }
