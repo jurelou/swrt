@@ -3,9 +3,9 @@
 		{
 			"domains": [
 				"ritonade.fr.",
-				"poc.argos.sh."
+				"argos.sh."
 			],
-			"ip": "192.168.1.101"
+			"ip": "192.168.101"
 		}
 	]
 }

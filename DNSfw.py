@@ -27,6 +27,10 @@ class DNSfw(Process):
             return '#{}: {} ==> {} @({}):{}'.format(self.counter, respPkt[IP].src, respPkt[IP].dst, respPkt.getlayer(DNS).qd.qname, respPkt.getlayer(DNS).an.rdata)
         elif (respPkt.getlayer(DNS).ns):
             return '#{}: {} ==> {} @({}):{}'.format(self.counter, respPkt[IP].src, respPkt[IP].dst, respPkt.getlayer(DNS).qd.qname, respPkt.getlayer(DNS).ns.rdata)
+  
+
+
+
   def get_response(self, pkt):
         if (
             pkt.haslayer(DNS) and
@@ -35,7 +39,6 @@ class DNSfw(Process):
             pkt[DNS].ancount == 0 and
             pkt[IP].src != self.myip
         ):
-
             spoofed = self.conf.getIPFromDomain(pkt[DNS].qd.qname)
             self.counter += 1
             if spoofed:
@@ -44,7 +47,7 @@ class DNSfw(Process):
                     /DNS(id=pkt[DNS].id,  qr=1, an=DNSRR(rrname=pkt[DNS].qd.qname,ttl=10, rdata=spoofed)\
                     /DNSRR(rrname=pkt[DNS].qd.qname,rdata=spoofed))
                 send(spfResp, verbose=0)
-                if (spfResp.getlayer(DNS).an.rdata):
+                if (spfResp.getlayer(DNS).an.rdata):    
                     return '#{}: {} ==> {} {}@{}'.format(self.counter, spfResp[IP].src, spfResp[IP].dst, spfResp[DNS].an.rrname, spfResp[DNS].an.rdata)
                 else :
                     return 'dns forwarder error'
@@ -54,7 +57,7 @@ class DNSfw(Process):
   def run(self):
     filter = 'udp dst port 53 and ip dst {0}'.format(self.router)
     sniff(filter=filter, prn=self.get_response)
-
+    #three_whs()s
   def stop(self): 
     #self.e.set() 
     print " -- Stopping DNSSniff" 
