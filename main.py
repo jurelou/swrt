@@ -10,6 +10,9 @@ import DNSfw as DNSforwarder
 import multiprocessing
 import HTTPForwarder
 
+BLUE = '\033[94m'
+END = '\033[0m'
+
 class SWRT(object):
   args = 0
   def parseArgs(self):
@@ -23,12 +26,12 @@ class SWRT(object):
  
   def printArgs(self):
     if SWRT.args.debug:
-      print(" -- debug mode on")
+      print BLUE + " -- debug mode on"
     else:
-      print(" -- debug mode off")
-      print(" -- interface:" +  SWRT.args.interface)
-      print(" -- target:" +  SWRT.args.target)
-      print(" -- gateway:" +  SWRT.args.gateway)
+      print  BLUE + "-- debug mode off"
+      print " -- interface:" +  SWRT.args.interface
+      print " -- target:" +  SWRT.args.target
+      print " -- gateway:" +  SWRT.args.gateway + END
 
 def main():    
   SWRT().parseArgs()
@@ -37,21 +40,19 @@ def main():
   if (SWRT.args.conf != None):
     conf = DNSConf.DNSConf(SWRT.args.interface, SWRT.args.conf)  
   DNSfw = DNSforwarder.DNSfw(SWRT.args.interface, SWRT.args.gateway, conf)
-  HTTPfw = HTTPForwarder.HTTPForwarder(SWRT.args.interface, SWRT.args.gateway)
-  
+  HTTPfw = HTTPForwarder.HTTPForwarder(SWRT.args.interface, SWRT.args.gateway)  
   poisoner = ARPPoisoner.ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
   poisoner.daemon = True
   DNSfw.daemon = True
   DNSfw.start()
-  #HTTPfw.start()
+  HTTPfw.start()
   poisoner.start()
   try:
     DNSfw.join()
-    #HTTPfw.join()
+    HTTPfw.join()
   except KeyboardInterrupt:
     poisoner.stop()
     DNSfw.stop()
-    #HTTPfw.stop()
 
 if __name__ == '__main__':
   if os.getuid()!=0:
