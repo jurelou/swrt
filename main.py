@@ -15,7 +15,7 @@ END = '\033[0m'
 
 class SWRT(object):
   args = 0
-  def parseArgs(self):
+  def parseArgs(self)q:
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", help="increase output verbosity", action="store_true", required=False)
     parser.add_argument('-i', action='store', default="ens33", dest='interface', help='Store the interface', required=False)
@@ -44,15 +44,15 @@ def main():
   poisoner = ARPPoisoner.ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
   poisoner.daemon = True
   DNSfw.daemon = True
-  DNSfw.start()
+  #DNSfw.start()
   HTTPfw.start()
   poisoner.start()
   try:
-    DNSfw.join()
+    #DNSfw.join()
     HTTPfw.join()
   except KeyboardInterrupt:
     poisoner.stop()
-    DNSfw.stop()
+    #DNSfw.stop()
 
 if __name__ == '__main__':
   if os.getuid()!=0:

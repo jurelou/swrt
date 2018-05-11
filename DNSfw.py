@@ -29,7 +29,7 @@ class DNSfw(Process):
         send(respPkt, verbose=0)
         print COL + ' [DNS] ' + respPkt[IP].dst + ' > ' + respPkt[DNS].qd.qname + END
 
-  def get_response(self, pkt):
+  def get_response(self, pkt):  
         if (
             pkt.haslayer(DNS) and
             DNS in pkt and
@@ -50,6 +50,7 @@ class DNSfw(Process):
                 return self.forward_dns(pkt)    
   
   def run(self):
+    print '\033[92m[+]\tStarting DNS forwarder\033[0m'
     filter = 'udp dst port 53 and ip dst {0}'.format(self.router)
     sniff(filter=filter, prn=self.get_response)
   def stop(self): 

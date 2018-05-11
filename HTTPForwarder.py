@@ -24,12 +24,13 @@ class HTTPForwarder(Process):
         self.__stopped = Event()
 
     def run(self):
-        os.system('iptables -A INPUT -j NFQUEUE')
+        print '\033[92m[+]\tStarting HTTP forwarder\033[0m'
+        os.system('iptables -A FORWARD -j NFQUEUE')
         try:
             self.q.try_run()
         except KeyboardInterrupt:
             self.restore()
-            return;
+            return; 
 
     def restore(self):
         print '\033[94m\n[-]\tStopping HTTP forwarder\033[0m'
@@ -41,10 +42,16 @@ class HTTPForwarder(Process):
     def cb(self, pkt):
         data = pkt.get_data()
         spoofed = IP(data)
-        print "---", spoofed[IP].src
+        if spoofed.haslayer(DNS):
+            
+            print "-- RECEIVED ", self.counter, " --\n", spoofed.show(), "\n-----\n"
+        else:
+            print "no dns\n"
+        self.counter += 1
         pkt.set_verdict(nfqueue.NF_ACCEPT)
+        
+        #pkt.set_verdict(nfqueue.NF_DROP)
         '''
-        pkt.set_verdict(nfqueue.NF_DROP)
             pour drop les paquets
         pkt.set_verdict_modified(nfqueue.NF_ACCEPT, str(spoofed), len(spoofed))
             pour modif
