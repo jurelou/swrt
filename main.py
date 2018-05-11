@@ -39,7 +39,7 @@ def main():
   poisoner = ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
   poisoner.daemon = True
   poisoner.start()
-  q = NetQueue(SWRT.args)
+  q = NetQueue(SWRT.args, conf)
   q.start()
   try:
     #DNSfw.join()
