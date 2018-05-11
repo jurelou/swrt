@@ -2,20 +2,17 @@
 
 import argparse
 import os
-import threading, time
-import sys
-import ARPPoisoner
 import DNSConf
-import DNSfw as DNSforwarder
 import multiprocessing
-import HTTPForwarder
+from ARPPoisoner import ARPPoisoner
+from NetQueue import NetQueue
 
 BLUE = '\033[94m'
 END = '\033[0m'
 
 class SWRT(object):
   args = 0
-  def parseArgs(self)q:
+  def parseArgs(self):
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", help="increase output verbosity", action="store_true", required=False)
     parser.add_argument('-i', action='store', default="ens33", dest='interface', help='Store the interface', required=False)
@@ -38,18 +35,15 @@ def main():
   SWRT().printArgs()
   
   if (SWRT.args.conf != None):
-    conf = DNSConf.DNSConf(SWRT.args.interface, SWRT.args.conf)  
-  DNSfw = DNSforwarder.DNSfw(SWRT.args.interface, SWRT.args.gateway, conf)
-  HTTPfw = HTTPForwarder.HTTPForwarder(SWRT.args.interface, SWRT.args.gateway)  
-  poisoner = ARPPoisoner.ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
+    conf = DNSConf.DNSConf(SWRT.args.interface, SWRT.args.conf)
+  poisoner = ARPPoisoner(SWRT.args.target, SWRT.args.gateway, SWRT.args.interface)
   poisoner.daemon = True
-  DNSfw.daemon = True
-  #DNSfw.start()
-  HTTPfw.start()
   poisoner.start()
+  q = NetQueue(SWRT.args)
+  q.start()
   try:
     #DNSfw.join()
-    HTTPfw.join()
+    q.join()
   except KeyboardInterrupt:
     poisoner.stop()
     #DNSfw.stop()

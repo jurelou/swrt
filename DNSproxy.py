@@ -8,16 +8,17 @@ import netifaces
 COL = '\033[93m'
 END = '\033[0m'
 
-class DNSfw(Process): 
-  def __init__(self, i, gateway, conf):
-    super(DNSfw, self).__init__()
+class DNSproxy(Process): 
+  def __init__(self, params):
+    super(DNSproxy, self).__init__()
     self.counter = 0
-    self.interface = i
-    self.conf = conf
-    self.myip = netifaces.ifaddresses(i)[2][0]['addr']
-    self.mymac = netifaces.ifaddresses(i)[17][0]['addr']
-    self.router = gateway
+    self.interface = params.interface
+    self.conf = params.conf
+    self.myip = netifaces.ifaddresses(self.interface)[2][0]['addr']
+    self.mymac = netifaces.ifaddresses(self.interface)[17][0]['addr']
+    self.router = params.gateway
     self.enableIpForwarding()
+    print '\033[92m[+]\tStarting DNS proxy\033[0m'
 
 
   def forward_dns(self, orig_pkt):
@@ -29,7 +30,10 @@ class DNSfw(Process):
         send(respPkt, verbose=0)
         print COL + ' [DNS] ' + respPkt[IP].dst + ' > ' + respPkt[DNS].qd.qname + END
 
-  def get_response(self, pkt):  
+  def call(self, pkt):
+    print "DNS CALLED"
+    return {'meth': 0}    
+    '''
         if (
             pkt.haslayer(DNS) and
             DNS in pkt and
@@ -47,14 +51,10 @@ class DNSfw(Process):
                 send(spfResp, verbose=0)
                 print COL + ' [DNS] ' + spfResp[IP].dst + ' > ' + spfResp[DNS].an.rrname + ':' + spfResp[DNS].an.rdata + '\033[91m spoofed \033[0m'
             else:
-                return self.forward_dns(pkt)    
-  
-  def run(self):
-    print '\033[92m[+]\tStarting DNS forwarder\033[0m'
-    filter = 'udp dst port 53 and ip dst {0}'.format(self.router)
-    sniff(filter=filter, prn=self.get_response)
+                return self.forward_dns(pkt)
+    '''
   def stop(self): 
-    print '\033[94m[-]\tStopping DNS forwarder\033[0m'
+    print '\033[94m[-]\tStopping DNS proxy\033[0m'
 
   def enableIpForwarding(self):
     ipf = open('/proc/sys/net/ipv4/ip_forward', 'r+')
