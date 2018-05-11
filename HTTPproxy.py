@@ -22,7 +22,17 @@ class HTTPproxy(Process):
 
   def call(self, pkt):
     print ("HTTP / ", end="")
-    return {'meth': 0}    
-
+    print (pkt.show())
+    '''
+    pkt[TCP].payload = str(pkt[TCP].payload).replace("ABC","GET")
+    pkt[IP].ttl = 40
+    print ('Data: '+ str(pkt[TCP].payload))
+    print ('TTL: ' + str(pkt[IP].ttl))
+    print (pkt.show())
+    del pkt[IP].chksum
+    del pkt[TCP].chksum
+    return {'meth': 2, 'spoofed_pkt': pkt}    
+    '''
+    return {'meth': 0}
   def stop(self): 
     print ('\033[94m[-]\tStopping HTTP proxy\033[0m')

