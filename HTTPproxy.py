@@ -40,13 +40,19 @@ class HTTPproxy(Process):
     if ip.haslayer(HTTP):
         print ("HTTP / ", end="")
         if ip.haslayer(HTTPRequest):
-            print ("REQUEST / ", end="")
-        if ip.haslayer(HTTPResponse):
+            return {'meth':0} 
+        elif ip.haslayer(HTTPResponse):
             print ("RESPONSE / ", end="")
+            #ip[TCP].payload = str(ip[TCP].payload).replace("BROKEN", "ABCDEF")
+            #print("initial checksums:", ip.chksum , " ", ip[TCP].chksum)
+            #del ip.chksum
+            #del ip[TCP].chksum 
+            #print(ip[TCP].show2())
+            #print("end checksums:", ip.chksum , " ", ip[TCP].chksum)
+            return {'meth':1, 'spoofed_pkt': pkt} 
         '''
         sendp(Ether()/IP(dst="poc.argos.sh")/TCP()/"GET / HTTP/1.0\r\nHost: poc.argos.sh\r\nAccept: */*\r\n\r\n")
-        '''
-        return {'meth':1, 'spoofed_pkt': pkt}    
+        '''   
     else:
         print("TCP", end="")
     return {'meth': 0}

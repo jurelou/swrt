@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import sys, nfqueue
+from netfilterqueue import NetfilterQueue
 from scapy.all import *
 from multiprocessing import Process
 from multiprocessing import Event
@@ -16,10 +16,9 @@ from HTTPproxy import HTTPproxy
 class NetQueue(Process):
     def __init__(self, params, conf):
         super(NetQueue, self).__init__()
-        self.counter = 0
-        self.q = nfqueue.queue()
-        self.q.open()
-        self.q.bind(socket.AF_INET)
+        self.counter = 0   
+        self.q = NetfilterQueue()
+        self.q.bind(1, self.cb)
         self.params = params
         self.params.conf = conf
         self.DNSworker = DNSproxy(self.params)
@@ -27,20 +26,21 @@ class NetQueue(Process):
     
     @staticmethod
     def accept(original_pkt, spoofed_pkt):
-        original_pkt.set_verdict(nfqueue.NF_ACCEPT)
+        original_pkt.accept()
         print (" <-- accepted")
     @staticmethod
     def drop(original_pkt, spoofed_pkt):
-        original_pkt.set_verdict(nfqueue.NF_DROP)
+        original_pkt.drop()
         print (" <-- dropped")
 
     @staticmethod
     def modify(original_pkt, spoofed_pkt):
-        original_pkt.set_verdict_modified(nfqueue.NF_ACCEPT, str(spoofed_pkt), len(spoofed_pkt))
+        original_pkt.set_payload(str(spoofed_pkt))
+        original_pkt.accept()
         print (" <-- modified")
 
     def cb(self, payload):
-        data = payload.get_data()
+        data = payload.get_payload()
         pkt = IP(data)
         proto = pkt.proto
         target = '\033[92mvictim\033[0m' if pkt.src == self.params.target else pkt.src
@@ -50,7 +50,7 @@ class NetQueue(Process):
                     1 : self.modify,
                     2 : self.drop
         }
-        ret = {'meth': 0}    
+        ret = {'meth': 0}
         if proto is 0x06:
             if pkt[TCP].dport is 80 or pkt[TCP].sport is 80:
                 ret = self.HTTPworker.call(data)
@@ -82,18 +82,18 @@ class NetQueue(Process):
         meth_map[ret['meth']](payload, ret['spoofed_pkt'])
 
     def run(self):
-        self.q.set_callback(self.cb)
-        self.q.create_queue(0)
-        os.system('iptables -A FORWARD -j NFQUEUE')
+        os.system('iptables -A FORWARD -j NFQUEUE --queue-num 1')
+
         try:
-            self.q.try_run()
+            self.q.run()
+            self.qInput.run()
+
         except KeyboardInterrupt:
             self.restore()
             return; 
 
     def restore(self):
-        self.q.unbind(socket.AF_INET)
-        self.q.close()
+        self.q.unbind()
         self.HTTPworker.stop()
         self.DNSworker.stop()
         os.system('iptables -F') # oops ...
