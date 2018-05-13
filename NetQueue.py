@@ -52,12 +52,12 @@ class NetQueue(Process):
         }
         ret = {'meth': 0}    
         if proto is 0x06:
-            if pkt[TCP].dport is 80:
-                ret = self.HTTPworker.call(pkt)
+            if pkt[TCP].dport is 80 or pkt[TCP].sport is 80:
+                ret = self.HTTPworker.call(data)
             else:
-                print("TCP", end="")
+                print("FORWARDING SMTG STRANGE BUDDY", end="")
             '''
-            TODO            
+            TODO
             if pkt[TCP].dport is 443:
                 print("HTTPS", end="")        
             elif pkt[TCP].dport is 21 or pkt[TCP].dport is 20 or pkt[TCP].dport is 115:
@@ -78,7 +78,7 @@ class NetQueue(Process):
             print ("IPv6-Route", end="")
         
         if not 'spoofed_pkt' in ret:
-            ret['spoofed_pkt'] = ''
+            ret['spoofed_pkt'] = None
         meth_map[ret['meth']](payload, ret['spoofed_pkt'])
 
     def run(self):

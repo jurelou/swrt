@@ -23,12 +23,12 @@ class SWRT(object):
  
   def printArgs(self):
     if SWRT.args.debug:
-      print BLUE + " -- debug mode on"
+      print (BLUE + " -- debug mode on")
     else:
-      print  BLUE + "-- debug mode off"
-      print " -- interface:" +  SWRT.args.interface
-      print " -- target:" +  SWRT.args.target
-      print " -- gateway:" +  SWRT.args.gateway + END
+      print  (BLUE + "-- debug mode off")
+      print (" -- interface:" +  SWRT.args.interface)
+      print (" -- target:" +  SWRT.args.target)
+      print (" -- gateway:" +  SWRT.args.gateway + END)
 
 def main():    
   SWRT().parseArgs()
@@ -42,11 +42,9 @@ def main():
   q = NetQueue(SWRT.args, conf)
   q.start()
   try:
-    #DNSfw.join()
     q.join()
   except KeyboardInterrupt:
     poisoner.stop()
-    #DNSfw.stop()
 
 if __name__ == '__main__':
   if os.getuid()!=0:

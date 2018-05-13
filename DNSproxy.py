@@ -13,7 +13,6 @@ END = '\033[0m'
 class DNSproxy(Process): 
   def __init__(self, params):
     super(DNSproxy, self).__init__()
-    self.counter = 0
     self.interface = params.interface
     self.conf = params.conf
     self.myip = netifaces.ifaddresses(self.interface)[2][0]['addr']
@@ -45,8 +44,7 @@ class DNSproxy(Process):
             print ('DNS ' + qname + " / ", end="")    
             if spoofed:
                 print(WARNING + 'spoofed to ' + spoofed + END, end="")
-                send (self.forge_reply(pkt, qname, spoofed), verbose = 0) 
-                return {'meth': 2}
+                return {'meth': 1, 'spoofed_pkt': self.forge_reply(pkt, qname, spoofed)}
             else:
                 print('forward', end="")
                 return {'meth': 0}
