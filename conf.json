@@ -1,0 +1,15 @@
+{
+	"DNSEntries": [
+		{
+			"domains": [
+				"ritonade.fr.",
+				"poc.argos.sh.",
+				"argos.sh",
+				"google.fr.",
+				"wikipedia.fr",
+				"hello.fr"
+			],
+			"ip": "mine"
+		}
+	]
+}

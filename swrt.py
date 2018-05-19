@@ -28,11 +28,11 @@ class SWRT(object):
 		parser.add_argument('-c', action='store', dest='conf', default='./conf.json', help='Store path/to/conf.json', required=False)
 		parser.add_argument('-p', action='store', default=8080, dest='port', help='Store the port', required=False)
 		self.args = parser.parse_args()
+		os.system("echo 1 > /proc/sys/net/ipv4/ip_forward")
 
 		def get_host_ip(interface):
 			try:
-				s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-				
+				s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)	
 				return socket.inet_ntoa(fcntl.ioctl(
 						s.fileno(),
 						0x8915,
@@ -63,13 +63,11 @@ class SWRT(object):
 		self.args.target_mac = resolve_mac(self.args.target_ip)
 		self.args.gateway_ip = self.args.gateway
 		self.args.gateway_mac = resolve_mac(self.args.gateway_ip)
-		print "[+] MY IP: {}".format(self.args.host_ip)		
-		print "[+] MY MAC {}".format(self.args.host_mac)
-		print "[+] VICTIM IP {}".format(self.args.target_ip)
-		print "[+] VICTIM MAC {}".format(self.args.target_mac)		
-		print "[+] GATEWAY IP {}".format(self.args.gateway_ip)
-		print "[+] GATEWAY MAC {}".format(self.args.gateway_mac)
-
+		print "\033[95m*********************************************************"
+		print "*\tMY IP: {} ({})\t*".format(self.args.host_ip, self.args.host_mac)		
+		print "*\t\033[1mVICTIM IP {} ({})\t*".format(self.args.target_ip, self.args.target_mac)
+		print "*\tGATEWAY IP {} ({})\t*".format(self.args.gateway_ip, self.args.gateway_mac)
+		print "*********************************************************\033[0m"
 	def setup(self, conf):
   		print ("lol")
 
@@ -88,13 +86,10 @@ if __name__ == "__main__":
 		proxy.go()
 		
 	except KeyboardInterrupt:
-		print("QUIT")
-		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
-		os.system('iptables -t nat -F')
+		proxy.stop()
 		exit(1)
 	except Exception as e:
-		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
-		os.system('iptables -t nat -F')
+		proxy.stop()
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
 		traceback.print_exception(exc_type, exc_value, exc_traceback,

