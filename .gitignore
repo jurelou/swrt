@@ -1,5 +1,6 @@
 .pyc
 *~
 *.pyc
-
+*.idea
 *.swp
+*.idea/
