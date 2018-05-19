@@ -64,7 +64,7 @@ class DnsProxy:
         self.q.bind(4, self.callback)
         self.q.run()
 
-  def start(self):
+  def go(self):
         self.t.start()
         print ('\033[92m[+]\tStarting DNS proxy\033[0m')
 

