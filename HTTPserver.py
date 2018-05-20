@@ -1,6 +1,6 @@
 from __future__ import print_function
 import logging
-logging.getLogger("httplib").setLevel(logging.WARNING)
+logging.getLogger("httplib").setLevel(logging.ERROR)
 import urllib2
 import httplib
 import ssl
@@ -81,7 +81,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     self.tls.socket = httplib.HTTPConnection(netloc, timeout=self.timeout)
             self.tls.socket.request(self.command, path, req_body, dict(req.headers))
             res = self.tls.socket.getresponse()
-            print("res:", res.msg)
             setattr(res, 'headers', res.msg)
             setattr(res, 'response_version', {10: 'HTTP/1.0', 11: 'HTTP/1.1'})
 
@@ -90,10 +89,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             print ("Exception ---> {}".format(e))
             return
         encode = res.headers.get('Content-Encoding', 'identity')
-        print("!!!!!!!!!!   Res is encoded in: ", encode)
-
+        #TODO: gerer la compression du body
         #### TODO: where tha magic happens
-        self.SSLStrip.modify_response(req, res, res_body)
+        self.SSLStrip.modify_response(req, res.msg, res_body)
         ###
 
         setattr(res, 'headers', self.clean_headers(res.headers))
@@ -103,7 +101,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(res_body)
         self.wfile.flush()
-
+    
     def do_POST(self):
 		print("HTTP from: {} \033[94m{} {}\033[0m".format(self.client_address[0][7::] ,self.command, self.path))
 		pass

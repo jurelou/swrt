@@ -5,8 +5,10 @@ from __future__ import print_function
 class SSLStrip:
     def modify_request(self, header, body):
         pass
-    def modify_response(self, req, res, body):
-        if res.header:
-            for h in res.headers:
-                if "https://" in res.headers[h]:
-                    res.headers[h].replace("https://","http://s")
+    def modify_response(self, req, headers, body):
+        if headers:
+            hsts = 'Strict-Transport-Security'
+            print("HLEOOOOO")
+            for h in headers:
+                if "https://" in headers[h]:
+                    print("stripped: ", headers[h], headers[h].replace("https://","http://s"))
