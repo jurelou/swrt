@@ -63,22 +63,20 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         ###############
         
         url = urlparse.urlsplit(req.path)
-        scheme = url.scheme
-        netloc = url.netloc
         path = (url.path + '?' + url.query if url.query else url.path)        
-        origin = (scheme, netloc)
+        origin = (url.scheme, url.netloc)
 
-        req.headers['Host'] = netloc
+        req.headers['Host'] = url.netloc
 
         setattr(req, 'headers', self.clean_headers(req.headers))
         
         try:
             if origin is not self.tls.socket:
-                if scheme == 'https':
+                if url.scheme == 'https':
                     pass
                     #self.tls.socket = httplib.HTTPSConnection(netloc, timeout=self.timeout)
                 else:
-                    self.tls.socket = httplib.HTTPConnection(netloc, timeout=self.timeout)
+                    self.tls.socket = httplib.HTTPConnection(url.netloc, timeout=self.timeout)
             self.tls.socket.request(self.command, path, req_body, dict(req.headers))
             res = self.tls.socket.getresponse()
             setattr(res, 'headers', res.msg)
