@@ -1,5 +1,7 @@
 from __future__ import print_function
-import threading
+import logging
+logging.getLogger("httplib").setLevel(logging.CRITICAL)
+logging.getLogger("scapy.runtime").setLevel(logging.CRITICAL)
 from scapy.all import *
 from BaseHTTPServer import HTTPServer
 from SocketServer import ThreadingMixIn
