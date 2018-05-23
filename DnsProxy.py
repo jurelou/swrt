@@ -48,7 +48,7 @@ class DnsProxy:
                                           DNS(id=pkt[DNS].id, qr=1, aa=1, qd=pkt[DNS].qd,\
                                           an=DNSRR(rrname=pkt[DNS].qd.qname, ttl=10, rdata=self.params.host_ip))
                     packet.set_payload(str(new_pkt))
-                    print("DNS from: {} --> {} \033[94mspoofed to \033[1m{}\033[0m".format(pkt[IP].src, pkt[DNSQR].qname, spoofed))
+                    print("DNS from: {} --> {} \033[94mspoofed to \033[1m ME \033[0m".format(pkt[IP].src, pkt[DNSQR].qname))
                     packet.accept()
 
   def dnsProxy(self):

