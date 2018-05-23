@@ -11,7 +11,7 @@ class SSLStrip:
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
         if req.headers:
-            prefixes = ["wwww","waccounts","wmail","wbooks","wssl","wdrive","wmaps","wnews","wplay","wplus","wencrypted","wassets","wgraph","wfonts","wlogin","wsecure","wwiki","wwallet","wmyaccount","wphotos","wdocs","wlh3","wapis","wb","ws","wbr","wna","wads","wlogin","wwm","wm","wmobile","wsb"]
+            prefixes = ["wwww", "wintra"]
             for p in prefixes:
                 for h in req.headers:
                     if p in req.headers[h]:

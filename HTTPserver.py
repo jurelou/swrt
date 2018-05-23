@@ -58,7 +58,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         assert url.scheme in ('http', 'https')
         print("HTTP from: {} \033[94m\033[1m{}\033[0m\033[94m {}\033[0m".format(req.client_address[0][7::], req.command, path))
         req.headers['Host'] = url.netloc
-        prefixes = ["wwww","waccounts","wmail","wbooks","wssl","wdrive","wmaps","wnews","wplay","wplus","wencrypted","wassets","wgraph","wfonts","wlogin","wsecure","wwiki","wwallet","wmyaccount","wphotos","wdocs","wlh3","wapis","wb","ws","wbr","wna","wads","wlogin","wwm","wm","wmobile","wsb"]
+        prefixes = ["wwww", "wintra"]
         for prefix in prefixes:
             if url.netloc.startswith(prefix):
                 url = url._replace(scheme="https", netloc=url.netloc[1:])
