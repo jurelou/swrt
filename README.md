@@ -1,6 +1,6 @@
 # SWRT
-
-SWRT is a simple DNS/HTTP Man in the Middle which allows alteration of request (DNS only for the moment)
+# based on sslstrip2
+SWRT is a simple DNS/HTTP/HTTPS man in the Middle which allows alteration of requests
 
 It is Module oriented so if you want to use just one or more feature you can.
 
